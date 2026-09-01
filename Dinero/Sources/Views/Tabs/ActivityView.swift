@@ -49,80 +49,39 @@ struct ActivityView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                ScreenHeader(title: "Activity")
+        List {
+            filterPills
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
 
-                searchField
-                    .padding(.bottom, 16)
+            ForEach(groupedFiltered, id: \.label) { group in
+                Section(group.label) {
+                    ForEach(group.transactions) { txn in
+                        HStack(spacing: 12) {
+                            CategoryChip(category: txn.category)
 
-                filterPills
-                    .padding(.bottom, 16)
-
-                ForEach(groupedFiltered, id: \.label) { group in
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(group.label.uppercased())
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color.labelSecondary)
-                            .tracking(0.3)
-                            .padding(.vertical, 6)
-
-                        GlassCard {
-                            VStack(spacing: 0) {
-                                ForEach(Array(group.transactions.enumerated()), id: \.element.id) { index, txn in
-                                    HStack(spacing: 12) {
-                                        CategoryChip(category: txn.category)
-
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text(txn.merchantName)
-                                                .font(.system(size: 15, weight: .medium))
-                                                .foregroundStyle(Color.labelPrimary)
-                                            Text("\(txn.category.label) \u{00B7} \(timeString(txn.date))")
-                                                .font(.system(size: 12))
-                                                .foregroundStyle(Color.labelSecondary)
-                                        }
-
-                                        Spacer()
-
-                                        Text("\u{2212}\(AmountFormatter.format(txn.amount))")
-                                            .font(.system(size: 15, weight: .semibold))
-                                            .foregroundStyle(Color.labelPrimary)
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
-                                    .overlay(alignment: .bottom) {
-                                        if index < group.transactions.count - 1 {
-                                            Divider()
-                                                .padding(.leading, 68)
-                                        }
-                                    }
-                                }
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(txn.merchantName)
+                                    .font(.system(size: 15, weight: .medium))
+                                Text("\(txn.category.label) \u{00B7} \(timeString(txn.date))")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(.secondary)
                             }
+
+                            Spacer()
+
+                            Text("\u{2212}\(AmountFormatter.format(txn.amount))")
+                                .font(.system(size: 15, weight: .semibold))
                         }
+                        .padding(.vertical, 4)
                     }
-                    .padding(.bottom, 8)
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 100)
         }
-    }
-
-    // MARK: - Search
-
-    private var searchField: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 16))
-                .foregroundStyle(Color.labelSecondary)
-            TextField("Search transactions", text: $searchText)
-                .font(.system(size: 15))
-                .foregroundStyle(Color.labelPrimary)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color(hex: 0x8E8E93).opacity(0.12))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .listStyle(.insetGrouped)
+        .navigationTitle("Activity")
+        .searchable(text: $searchText, prompt: "Search transactions")
     }
 
     // MARK: - Filter Pills
@@ -142,6 +101,8 @@ struct ActivityView: View {
                     }
                 }
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
         }
     }
 
@@ -163,7 +124,7 @@ struct FilterPill: View {
         Button(action: action) {
             Text(label)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(isSelected ? .white : Color(hex: 0x3C3C43))
+                .foregroundStyle(isSelected ? .white : .primary)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 7)
                 .background(
@@ -173,7 +134,7 @@ struct FilterPill: View {
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ))
-                        : AnyShapeStyle(Color(hex: 0x8E8E93).opacity(0.12))
+                        : AnyShapeStyle(Color(.systemFill))
                 )
                 .clipShape(Capsule())
         }

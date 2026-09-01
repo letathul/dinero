@@ -2,24 +2,21 @@ import SwiftUI
 
 struct AddExpenseView: View {
     @Environment(ExpenseStore.self) private var store
-    @State private var amountText = "0"
+    @State private var amount: Decimal = 0
     @State private var selectedCategory: Category?
     @State private var note = ""
     @State private var showSuccess = false
+    @FocusState private var amountFocused: Bool
     var onDismiss: () -> Void
 
-    private var amountValue: Decimal {
-        Decimal(string: amountText) ?? 0
-    }
-
     private var canSave: Bool {
-        amountValue > 0 && selectedCategory != nil
+        amount > 0 && selectedCategory != nil
     }
 
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.bgPrimary.ignoresSafeArea()
+                Color(.systemGroupedBackground).ignoresSafeArea()
 
                 if showSuccess {
                     successOverlay
@@ -48,39 +45,35 @@ struct AddExpenseView: View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(spacing: 20) {
-                    amountDisplay
+                    amountField
                     categoryGrid
                     noteField
                 }
                 .padding(.horizontal, 20)
             }
 
-            VStack(spacing: 16) {
-                numpad
-                saveButton
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 16)
+            saveButton
+                .padding(.horizontal, 20)
+                .padding(.bottom, 16)
         }
     }
 
-    // MARK: - Amount Display
+    // MARK: - Amount Field
 
-    private var amountDisplay: some View {
+    private var amountField: some View {
         VStack(spacing: 4) {
             Text("Amount")
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Color.labelSecondary)
+                .foregroundStyle(.secondary)
 
-            Text("$\(amountText)")
-                .font(.system(size: 52, weight: .bold))
-                .tracking(-2)
-                .foregroundStyle(Color.labelPrimary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
+            TextField("$0.00", value: $amount, format: .currency(code: "USD"))
+                .keyboardType(.decimalPad)
+                .font(.system(size: 42, weight: .bold))
+                .multilineTextAlignment(.center)
+                .focused($amountFocused)
         }
         .padding(.vertical, 20)
-        .accessibilityLabel("Amount: $\(amountText)")
+        .onAppear { amountFocused = true }
     }
 
     // MARK: - Category Grid
@@ -89,7 +82,7 @@ struct AddExpenseView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("CATEGORY")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.labelSecondary)
+                .foregroundStyle(.secondary)
                 .tracking(0.3)
 
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
@@ -110,45 +103,16 @@ struct AddExpenseView: View {
     // MARK: - Note Field
 
     private var noteField: some View {
-        GlassCard {
-            HStack(spacing: 10) {
-                Image(systemName: "doc.text")
-                    .font(.system(size: 16))
-                    .foregroundStyle(Color.labelSecondary)
-                TextField("Add a note", text: $note)
-                    .font(.system(size: 15))
-                    .foregroundStyle(Color.labelPrimary)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+        HStack(spacing: 10) {
+            Image(systemName: "doc.text")
+                .font(.system(size: 16))
+                .foregroundStyle(.secondary)
+            TextField("Add a note", text: $note)
+                .font(.system(size: 15))
         }
-    }
-
-    // MARK: - Numpad
-
-    private var numpad: some View {
-        let keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "\u{232B}"]
-        return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
-            ForEach(keys, id: \.self) { key in
-                Button {
-                    handleKey(key)
-                } label: {
-                    Text(key)
-                        .font(.system(size: key == "\u{232B}" ? 18 : 22, weight: .medium))
-                        .foregroundStyle(key == "\u{232B}" ? Color.danger : Color.labelPrimary)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(
-                            key == "\u{232B}"
-                                ? Color.danger.opacity(0.1)
-                                : Color(hex: 0x8E8E93).opacity(0.08)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(key == "\u{232B}" ? "Backspace" : key)
-            }
-        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .glassCard()
     }
 
     // MARK: - Save Button
@@ -157,7 +121,7 @@ struct AddExpenseView: View {
         Button(action: save) {
             Text("Save Expense")
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(canSave ? .white : Color.labelTertiary)
+                .foregroundStyle(canSave ? .white : .tertiary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
                 .background(
@@ -167,7 +131,7 @@ struct AddExpenseView: View {
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ))
-                        : AnyShapeStyle(Color(hex: 0x8E8E93).opacity(0.15))
+                        : AnyShapeStyle(Color(.systemFill))
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
@@ -181,7 +145,7 @@ struct AddExpenseView: View {
             ZStack {
                 Circle()
                     .fill(LinearGradient(
-                        colors: [Color.success, Color.successAlt],
+                        colors: [Color.green, Color.green],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ))
@@ -194,54 +158,26 @@ struct AddExpenseView: View {
 
             Text("Expense Saved")
                 .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(Color.labelPrimary)
 
-            Text("\(AmountFormatter.format(amountValue)) added")
+            Text("\(AmountFormatter.format(amount)) added")
                 .font(.system(size: 15))
-                .foregroundStyle(Color.labelSecondary)
+                .foregroundStyle(.secondary)
         }
     }
 
     // MARK: - Logic
 
-    private func handleKey(_ key: String) {
-        if key == "\u{232B}" {
-            if amountText.count > 1 {
-                amountText.removeLast()
-            } else {
-                amountText = "0"
-            }
-            return
-        }
-
-        if key == "." {
-            if amountText.contains(".") { return }
-            amountText += "."
-            return
-        }
-
-        if let dotIndex = amountText.firstIndex(of: ".") {
-            let decimals = amountText[amountText.index(after: dotIndex)...]
-            if decimals.count >= 2 { return }
-        }
-
-        if amountText == "0" {
-            amountText = key
-        } else {
-            amountText += key
-        }
-    }
-
     private func save() {
-        guard let category = selectedCategory, amountValue > 0 else { return }
+        guard let category = selectedCategory, amount > 0 else { return }
         store.addTransaction(
             merchantName: note.isEmpty ? category.label : note,
-            amount: amountValue,
+            amount: amount,
             category: category,
             note: note.isEmpty ? nil : note
         )
         showSuccess = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+        Task {
+            try? await Task.sleep(for: .seconds(1.2))
             onDismiss()
         }
     }
@@ -259,17 +195,17 @@ struct CategoryButton: View {
             VStack(spacing: 4) {
                 Image(systemName: category.icon)
                     .font(.system(size: 22))
-                    .foregroundStyle(isSelected ? category.color : Color(hex: 0x6B7280))
+                    .foregroundStyle(isSelected ? category.color : .secondary)
                 Text(category.shortLabel)
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(isSelected ? category.color : Color(hex: 0x6B7280))
+                    .foregroundStyle(isSelected ? category.color : .secondary)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
             .background(
                 isSelected
                     ? category.color.opacity(0.1)
-                    : Color(hex: 0x8E8E93).opacity(0.08)
+                    : Color(.systemFill)
             )
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(

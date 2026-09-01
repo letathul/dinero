@@ -1,47 +1,53 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var selectedTab: TabItem = .summary
+    @State private var selectedTab: AppTab = .summary
     @State private var showAddExpense = false
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            LinearGradient(
-                colors: [Color.bgPrimary, Color.bgSecondary, Color.bgPrimary],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+        TabView(selection: $selectedTab) {
+            Tab("Summary", systemImage: "house.fill", value: .summary) {
+                NavigationStack {
+                    SummaryView(selectedTab: $selectedTab)
+                        .toolbar {
+                            ToolbarItem(placement: .primaryAction) {
+                                Button { showAddExpense = true } label: {
+                                    Image(systemName: "plus")
+                                }
+                            }
+                        }
+                }
+            }
 
-            tabContent
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            Tab("Activity", systemImage: "list.bullet", value: .activity) {
+                NavigationStack {
+                    ActivityView()
+                        .toolbar {
+                            ToolbarItem(placement: .primaryAction) {
+                                Button { showAddExpense = true } label: {
+                                    Image(systemName: "plus")
+                                }
+                            }
+                        }
+                }
+            }
 
-            FloatingTabBar(selection: $selectedTab) {
-                showAddExpense = true
+            Tab("Budgets", systemImage: "chart.pie.fill", value: .budgets) {
+                NavigationStack {
+                    BudgetsView()
+                }
+            }
+
+            Tab("Settings", systemImage: "gearshape.fill", value: .settings) {
+                NavigationStack {
+                    SettingsView()
+                }
             }
         }
         .sheet(isPresented: $showAddExpense) {
             AddExpenseView {
                 showAddExpense = false
             }
-        }
-    }
-
-    @ViewBuilder
-    private var tabContent: some View {
-        switch selectedTab {
-        case .summary:
-            SummaryView(onNavigate: { tab in
-                selectedTab = tab
-            })
-        case .activity:
-            ActivityView()
-        case .add:
-            Color.clear
-        case .budgets:
-            BudgetsView()
-        case .settings:
-            SettingsView()
         }
     }
 }

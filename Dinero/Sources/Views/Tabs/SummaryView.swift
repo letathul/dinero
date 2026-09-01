@@ -1,161 +1,153 @@
 import SwiftUI
+import Charts
 
 struct SummaryView: View {
     @Environment(ExpenseStore.self) private var store
-    var onNavigate: (TabItem) -> Void
+    @Binding var selectedTab: AppTab
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                ScreenHeader(
-                    title: "Summary",
-                    subtitle: currentMonthString,
-                    trailing: AnyView(avatarView)
-                )
-
                 heroCard
                 weeklyChart
                 topCategoriesCard
                 recentTransactionsCard
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 100)
+            .padding(.bottom, 20)
+        }
+        .navigationTitle("Summary")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                avatarView
+            }
         }
     }
 
     // MARK: - Hero Card
 
     private var heroCard: some View {
-        GlassCard(padding: 24) {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("Total Spent")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(Color(hex: 0x6B7280))
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Total Spent")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.secondary)
 
-                Text(AmountFormatter.format(store.totalSpent))
-                    .font(.system(size: 42, weight: .bold))
-                    .tracking(-1.5)
-                    .foregroundStyle(Color.labelPrimary)
-                    .padding(.top, 4)
+            Text(AmountFormatter.format(store.totalSpent))
+                .font(.system(size: 42, weight: .bold))
+                .tracking(-1.5)
+                .foregroundStyle(.primary)
+                .padding(.top, 4)
 
-                Text("of \(AmountFormatter.format(store.totalBudget)) budget")
-                    .font(.system(size: 13))
-                    .foregroundStyle(Color.labelSecondary)
-                    .padding(.top, 6)
+            Text("of \(AmountFormatter.format(store.totalBudget)) budget")
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+                .padding(.top, 6)
 
-                BudgetProgressBar(
-                    progress: store.budgetProgress,
-                    color: Color.success
-                )
+            ProgressView(value: min(store.budgetProgress, 1.0))
+                .tint(store.budgetProgress > 0.9 ? .red : store.budgetProgress > 0.7 ? .orange : .green)
                 .padding(.top, 16)
 
-                HStack {
-                    Text("\(Int(store.budgetProgress * 100))% used")
-                    Spacer()
-                    Text("\(AmountFormatter.format(store.totalBudget - store.totalSpent)) remaining")
-                }
-                .font(.system(size: 12))
-                .foregroundStyle(Color.labelSecondary)
-                .padding(.top, 8)
+            HStack {
+                Text("\(Int(store.budgetProgress * 100))% used")
+                Spacer()
+                Text("\(AmountFormatter.format(store.totalBudget - store.totalSpent)) remaining")
             }
+            .font(.system(size: 12))
+            .foregroundStyle(.secondary)
+            .padding(.top, 8)
         }
+        .glassCard(padding: 24)
     }
 
     // MARK: - Weekly Bar Chart
 
     private var weeklyChart: some View {
-        GlassCard(padding: 20) {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("This Week")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.labelPrimary)
+        let weekLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        let todayIndex = 6
 
-                HStack(alignment: .bottom, spacing: 8) {
-                    let maxVal = store.weeklySpend.max() ?? 1
-                    let weekLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-                    let todayIndex = 6
+        return VStack(alignment: .leading, spacing: 16) {
+            Text("This Week")
+                .font(.system(size: 15, weight: .semibold))
 
-                    ForEach(Array(store.weeklySpend.enumerated()), id: \.offset) { index, value in
-                        VStack(spacing: 6) {
-                            Text("$\(Int(value))")
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundStyle(Color.labelSecondary)
-
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .fill(
-                                    index == todayIndex
-                                        ? LinearGradient(colors: [Color.accentBlue, Color.accentPurple], startPoint: .top, endPoint: .bottom)
-                                        : LinearGradient(colors: [Color.accentBlue.opacity(0.12), Color.accentBlue.opacity(0.12)], startPoint: .top, endPoint: .bottom)
-                                )
-                                .frame(height: CGFloat(value / maxVal) * 72)
-
-                            Text(weekLabels[index])
-                                .font(.system(size: 11, weight: index == todayIndex ? .semibold : .medium))
-                                .foregroundStyle(index == todayIndex ? Color.accentBlue : Color.labelSecondary)
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
+            Chart {
+                ForEach(Array(store.weeklySpend.enumerated()), id: \.offset) { index, value in
+                    BarMark(
+                        x: .value("Day", weekLabels[index]),
+                        y: .value("Spend", value)
+                    )
+                    .foregroundStyle(index == todayIndex ? Color.accentBlue : Color.accentBlue.opacity(0.15))
+                    .cornerRadius(6)
                 }
-                .frame(height: 120)
             }
+            .chartYAxis(.hidden)
+            .frame(height: 120)
         }
+        .glassCard(padding: 20)
     }
 
     // MARK: - Top Categories
 
     private var topCategoriesCard: some View {
-        GlassCard(padding: 20) {
-            VStack(spacing: 0) {
-                SectionHeader(title: "Top Categories", action: "See All") {
-                    onNavigate(.budgets)
+        VStack(spacing: 0) {
+            HStack {
+                Text("Top Categories")
+                    .font(.system(size: 15, weight: .semibold))
+                Spacer()
+                Button("See All") {
+                    selectedTab = .budgets
                 }
-                .padding(.bottom, 14)
+                .font(.system(size: 13, weight: .medium))
+            }
+            .padding(.bottom, 14)
 
-                ForEach(Array(store.topCategories.prefix(4).enumerated()), id: \.element.category) { index, item in
-                    HStack(spacing: 12) {
-                        CategoryChip(category: item.category, size: 36)
+            ForEach(Array(store.topCategories.prefix(4).enumerated()), id: \.element.category) { index, item in
+                HStack(spacing: 12) {
+                    CategoryChip(category: item.category, size: 36)
 
-                        Text(item.category.label)
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(Color.labelPrimary)
+                    Text(item.category.label)
+                        .font(.system(size: 14, weight: .medium))
 
-                        Spacer()
+                    Spacer()
 
-                        Text(AmountFormatter.format(item.total))
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Color.labelPrimary)
-                    }
-                    .padding(.vertical, 10)
-                    .overlay(alignment: .top) {
-                        if index > 0 {
-                            Divider().opacity(0.3)
-                        }
+                    Text(AmountFormatter.format(item.total))
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                .padding(.vertical, 10)
+                .overlay(alignment: .top) {
+                    if index > 0 {
+                        Divider().opacity(0.3)
                     }
                 }
             }
         }
+        .glassCard(padding: 20)
     }
 
     // MARK: - Recent Transactions
 
     private var recentTransactionsCard: some View {
-        GlassCard(padding: 20) {
-            VStack(spacing: 0) {
-                SectionHeader(title: "Recent", action: "See All") {
-                    onNavigate(.activity)
+        VStack(spacing: 0) {
+            HStack {
+                Text("Recent")
+                    .font(.system(size: 15, weight: .semibold))
+                Spacer()
+                Button("See All") {
+                    selectedTab = .activity
                 }
-                .padding(.bottom, 14)
+                .font(.system(size: 13, weight: .medium))
+            }
+            .padding(.bottom, 14)
 
-                ForEach(Array(store.transactions.prefix(4).enumerated()), id: \.element.id) { index, txn in
-                    TransactionRow(transaction: txn)
-                        .overlay(alignment: .top) {
-                            if index > 0 {
-                                Divider().opacity(0.3)
-                            }
+            ForEach(Array(store.transactions.prefix(4).enumerated()), id: \.element.id) { index, txn in
+                TransactionRow(transaction: txn)
+                    .overlay(alignment: .top) {
+                        if index > 0 {
+                            Divider().opacity(0.3)
                         }
-                }
+                    }
             }
         }
+        .glassCard(padding: 20)
     }
 
     // MARK: - Helpers
@@ -174,12 +166,6 @@ struct SummaryView: View {
             )
             .clipShape(Circle())
     }
-
-    private var currentMonthString: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: Date())
-    }
 }
 
 // MARK: - Transaction Row
@@ -194,17 +180,15 @@ struct TransactionRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(transaction.merchantName)
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(Color.labelPrimary)
                 Text(timeString)
                     .font(.system(size: 12))
-                    .foregroundStyle(Color.labelSecondary)
+                    .foregroundStyle(.secondary)
             }
 
             Spacer()
 
             Text("\u{2212}\(AmountFormatter.format(transaction.amount))")
                 .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Color.labelPrimary)
         }
         .padding(.vertical, 10)
         .accessibilityElement(children: .combine)

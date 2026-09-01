@@ -26,27 +26,31 @@ struct ConfirmationView: View {
 
             Text("Automation Turned On")
                 .font(.system(size: 21, weight: .bold))
-                .foregroundStyle(Color.labelPrimary)
 
             Text("Every time \(trigger.title.lowercased()) occurs, your expense will be logged and categorized automatically.")
                 .font(.system(size: 14.5))
-                .foregroundStyle(Color.labelSecondary)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .lineSpacing(4)
                 .padding(.top, 8)
                 .padding(.horizontal, 20)
 
-            GlassCard {
-                VStack(spacing: 0) {
-                    infoRow(label: "Runs", value: "Automatically")
-                    Divider()
-                    infoRow(label: "Actions", value: "5 steps")
-                    Divider()
-                    infoRow(label: "Notifications", value: "On", valueColor: Color.success)
+            VStack(spacing: 0) {
+                LabeledContent("Runs", value: "Automatically")
+                Divider()
+                LabeledContent("Actions", value: "5 steps")
+                Divider()
+                HStack {
+                    Text("Notifications")
+                    Spacer()
+                    Text("On")
+                        .foregroundStyle(.green)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 6)
             }
+            .font(.system(size: 13))
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .glassCard()
             .padding(.top, 28)
 
             Spacer()
@@ -69,19 +73,8 @@ struct ConfirmationView: View {
             .padding(.bottom, 20)
         }
         .padding(.horizontal, 32)
-    }
-
-    private func infoRow(label: String, value: String, valueColor: Color = Color.labelPrimary) -> some View {
-        HStack {
-            Text(label)
-                .font(.system(size: 13))
-                .foregroundStyle(Color.labelSecondary)
-            Spacer()
-            Text(value)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(valueColor)
-        }
-        .padding(.vertical, 6)
+        .navigationTitle("Confirmation")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -97,61 +90,58 @@ struct LivePreviewView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                ScreenHeader(
-                    title: "Try It",
-                    subtitle: "Simulate the automation running"
-                )
+                Text("Simulate the automation running")
+                    .font(.system(size: 14))
+                    .foregroundStyle(.secondary)
+                    .padding(.bottom, 16)
 
-                GlassCard(padding: 20) {
-                    VStack(spacing: 16) {
-                        Text("Simulated lock screen")
-                            .font(.system(size: 14))
-                            .foregroundStyle(Color.labelSecondary)
+                VStack(spacing: 16) {
+                    Text("Simulated lock screen")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
 
-                        if stage == 0 {
-                            Button {
-                                runDemo()
-                            } label: {
-                                Text("\u{1F4B3} Simulate Apple Pay Tap")
-                                    .font(.system(size: 15, weight: .semibold))
-                                    .foregroundStyle(.white)
-                                    .padding(.horizontal, 24)
-                                    .padding(.vertical, 12)
-                                    .background(
-                                        LinearGradient(
-                                            colors: [Color.success, Color.successAlt],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
+                    if stage == 0 {
+                        Button {
+                            runDemo()
+                        } label: {
+                            Text("\u{1F4B3} Simulate Apple Pay Tap")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 12)
+                                .background(
+                                    LinearGradient(
+                                        colors: [Color.green, Color.green],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
                                     )
-                                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                            }
-                        }
-
-                        if stage >= 1 {
-                            notificationBanner
-                                .transition(.move(edge: .top).combined(with: .opacity))
-                        }
-
-                        if stage == 2 {
-                            Button("Run Again") {
-                                stage = 0
-                            }
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(Color.accentBlue)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         }
                     }
+
+                    if stage >= 1 {
+                        notificationBanner
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                    }
+
+                    if stage == 2 {
+                        Button("Run Again") {
+                            stage = 0
+                        }
+                        .font(.system(size: 14, weight: .medium))
+                    }
                 }
+                .glassCard(padding: 20)
 
                 Button(action: onRestart) {
                     Text("Build Another Automation")
                         .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Color.labelPrimary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
                         .background(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(Color.black.opacity(0.1), lineWidth: 1.5)
+                                .stroke(Color(.separator), lineWidth: 1.5)
                         )
                 }
                 .padding(.top, 20)
@@ -176,6 +166,7 @@ struct LivePreviewView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 40)
         }
+        .navigationTitle("Try It")
     }
 
     private var notificationBanner: some View {
@@ -186,7 +177,7 @@ struct LivePreviewView: View {
                     .frame(width: 28, height: 28)
                     .background(
                         LinearGradient(
-                            colors: [Color.accentPurple, Color(hex: 0xAF52DE)],
+                            colors: [Color.purple, Color(hex: 0xAF52DE)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -201,7 +192,7 @@ struct LivePreviewView: View {
 
                 Text("now")
                     .font(.system(size: 11))
-                    .foregroundStyle(Color(hex: 0x98989F))
+                    .foregroundStyle(.gray)
             }
 
             Text(stage == 1 ? "Detecting payment\u{2026}" : "Logged $24.50 at Blue Bottle Coffee")
@@ -211,15 +202,16 @@ struct LivePreviewView: View {
             if stage == 2 {
                 Text("Categorized as Food & Drink")
                     .font(.system(size: 12.5))
-                    .foregroundStyle(Color(hex: 0xC7C7CC))
+                    .foregroundStyle(.gray)
             }
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color(hex: 0x1C1C1E).opacity(0.92))
+                .fill(Color(.systemFill).opacity(0.92))
         )
+        .colorScheme(.dark)
         .frame(maxWidth: 320)
     }
 
@@ -227,7 +219,8 @@ struct LivePreviewView: View {
         withAnimation(.easeInOut(duration: 0.3)) {
             stage = 1
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+        Task {
+            try? await Task.sleep(for: .seconds(1.8))
             withAnimation(.easeInOut(duration: 0.3)) {
                 stage = 2
             }
