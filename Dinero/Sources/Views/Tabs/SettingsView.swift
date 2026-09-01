@@ -49,8 +49,7 @@ struct SettingsView: View {
                     SettingsRow(
                         icon: "\u{1F514}",
                         iconBG: Color(hex: 0xFEE2E2),
-                        label: "Notifications",
-                        showDivider: true
+                        label: "Notifications"
                     ) {
                         Toggle("", isOn: $notificationsEnabled)
                             .labelsHidden()
@@ -221,7 +220,6 @@ struct SettingsRow<Trailing: View>: View {
     let icon: String
     let iconBG: Color
     let label: String
-    var showDivider: Bool = true
     var isLast: Bool = false
     @ViewBuilder let trailing: Trailing
 
